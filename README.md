@@ -21,7 +21,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/GLPI-11.0-blue?style=flat-square&logo=data:image/svg+xml;base64," alt="GLPI 11">
   <img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.2+">
-  <img src="https://img.shields.io/badge/Versão-4.1.0-orange?style=flat-square" alt="Versão">
+  <img src="https://img.shields.io/badge/Versão-4.2.0-orange?style=flat-square" alt="Versão">
 </p>
 
 ### ✨ Funcionalidades
@@ -79,7 +79,7 @@ Navegue até a aba **Configurações > Geral > Mail Analyzer**.
 <p align="center">
   <img src="https://img.shields.io/badge/GLPI-11.0-blue?style=flat-square&logo=data:image/svg+xml;base64," alt="GLPI 11">
   <img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.2+">
-  <img src="https://img.shields.io/badge/Version-4.1.0-orange?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-4.2.0-orange?style=flat-square" alt="Version">
 </p>
 
 ---

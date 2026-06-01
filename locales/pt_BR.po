@@ -146,3 +146,27 @@ msgstr "OK"
 
 msgid "Never"
 msgstr "Nunca"
+
+msgid "Intelligent email conversation tracking"
+msgstr "Rastreamento inteligente de conversas por e-mail"
+
+msgid "Combines related emails into a single ticket and blocks duplicates automatically."
+msgstr "Combina e-mails relacionados em um único chamado e bloqueia duplicatas automaticamente."
+
+msgid "Tune how incoming emails are grouped and filtered"
+msgstr "Ajuste como os e-mails recebidos são agrupados e filtrados"
+
+msgid "Email processing activity over the selected period"
+msgstr "Atividade de processamento de e-mails no período selecionado"
+
+msgid "of total"
+msgstr "do total"
+
+msgid "Connection status and last processed email per collector"
+msgstr "Status da conexão e último e-mail processado por coletor"
+
+msgid "Latest emails analyzed by the plugin"
+msgstr "Últimos e-mails analisados pelo plugin"
+
+msgid "No activity recorded yet."
+msgstr "Nenhuma atividade registrada ainda."

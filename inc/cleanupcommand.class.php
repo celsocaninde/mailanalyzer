@@ -41,11 +41,12 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class PluginMailanalyzerCleanupCommand extends Command
 {
-   protected static $defaultName = 'mailanalyzer:cleanup';
+   protected static $defaultName = 'plugins:mailanalyzer:cleanup';
 
    protected function configure(): void
    {
       $this
+         ->setName('plugins:mailanalyzer:cleanup')
          ->setDescription('Clean up orphaned message_id records and old statistics')
          ->setHelp('Removes message_id records referencing tickets that no longer exist, and optionally purges old stats entries.')
          ->addOption(

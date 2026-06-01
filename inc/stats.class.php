@@ -148,7 +148,7 @@ class PluginMailanalyzerStats extends CommonDBTM
    }
 
    /**
-    * Display the statistics dashboard in the config tab.
+    * Display the statistics dashboard (KPI tiles + period filter) in the config tab.
     *
     * @param string $period Period filter
     * @return void
@@ -157,149 +157,145 @@ class PluginMailanalyzerStats extends CommonDBTM
    {
       $summary = self::getSummary($period);
       $total = array_sum($summary);
-      $events = self::getRecentEvents(15);
 
-      // Period selector using native GLPI Form
-      echo "<div class='center mb-3'>";
-      echo "<form method='post' action='" . Plugin::getWebDir('mailanalyzer') . "/front/stats.php'>";
-      echo "<input type='hidden' name='config_context' value='plugin:mailanalyzer'>";
-      echo "<input type='hidden' name='_glpi_tab' value='PluginMailanalyzerConfig$1'>";
       $periods = [
          '7days'  => __('Last 7 days', 'mailanalyzer'),
          '30days' => __('Last 30 days', 'mailanalyzer'),
          '90days' => __('Last 90 days', 'mailanalyzer'),
          'all'    => __('All time', 'mailanalyzer'),
       ];
-      echo "<table class='tab_cadre_fixe'>";
-      echo "<tr><th colspan='2'>" . __('Filter Statistics', 'mailanalyzer') . "</th></tr>";
-      echo "<tr class='tab_bg_1'>";
-      echo "<td>" . __('Period', 'mailanalyzer') . "</td>";
-      echo "<td>";
-      Dropdown::showFromArray('period', $periods, ['value' => $period]);
-      echo "&nbsp;<input type='submit' name='filter_stats' class='btn btn-primary btn-sm' value='" . _sx('button', 'Apply') . "'>";
-      echo "</td>";
-      echo "</tr>";
-      echo "</table>";
+
+      $cards = [
+         self::ACTION_DUPLICATE_BLOCKED => ['danger',  'ti-copy-off',    __('Duplicates Blocked', 'mailanalyzer')],
+         self::ACTION_FOLLOWUP_CREATED  => ['success', 'ti-message-2',   __('Followups Created', 'mailanalyzer')],
+         self::ACTION_TICKET_LINKED     => ['violet',  'ti-link',        __('Tickets Linked', 'mailanalyzer')],
+         self::ACTION_NEW_TICKET        => ['primary', 'ti-ticket',      __('New Tickets', 'mailanalyzer')],
+      ];
+
+      echo "<div class='ma-panel'>";
+
+      // Head with segmented period filter
+      echo "<div class='ma-panel__head'>";
+      echo "<span class='ma-panel__icon'><i class='ti ti-chart-bar'></i></span>";
+      echo "<div class='ma-panel__title'>" . __('Mail Analyzer Statistics', 'mailanalyzer');
+      echo "<small>" . __('Email processing activity over the selected period', 'mailanalyzer') . "</small>";
+      echo "</div>";
+
+      echo "<div class='ma-hero__aside' style='margin-left:auto'>";
+      echo "<form method='post' action='" . Plugin::getWebDir('mailanalyzer') . "/front/stats.php'>";
+      echo "<input type='hidden' name='filter_stats' value='1'>";
+      echo "<div class='ma-segment'>";
+      foreach ($periods as $key => $label) {
+         $active = $key === $period ? ' is-active' : '';
+         echo "<button type='submit' name='period' value='" . $key . "' class='ma-segment__btn$active'>" . $label . "</button>";
+      }
+      echo "</div>";
       Html::closeForm();
       echo "</div>";
+      echo "</div>"; // .ma-panel__head
 
-      // Stats cards
-      echo "<div class='center'>";
-      echo "<table class='tab_cadre_fixe'>";
+      echo "<div class='ma-panel__body'>";
 
-      echo "<tr><th colspan='4'>";
-      echo "<i class='fas fa-chart-bar me-1'></i> ";
-      echo __('Mail Analyzer Statistics', 'mailanalyzer');
-      echo "</th></tr>";
-
-      echo "<tr class='tab_bg_1'>";
-
-      // Card: Duplicates Blocked
-      echo "<td class='center' style='width:25%;padding:8px;'>";
-      echo "<div style='background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:#fff;border-radius:10px;padding:12px 8px;line-height:1.2;'>";
-      echo "<i class='fas fa-ban'></i> ";
-      echo "<span style='font-size:2em;font-weight:bold;'>{$summary[self::ACTION_DUPLICATE_BLOCKED]}</span><br>";
-      echo "<small>" . __('Duplicates Blocked', 'mailanalyzer') . "</small>";
-      echo "</div></td>";
-
-      // Card: Followups Created
-      echo "<td class='center' style='width:25%;padding:8px;'>";
-      echo "<div style='background:linear-gradient(135deg,#4ecdc4,#44bd62);color:#fff;border-radius:10px;padding:12px 8px;line-height:1.2;'>";
-      echo "<i class='fas fa-comments'></i> ";
-      echo "<span style='font-size:2em;font-weight:bold;'>{$summary[self::ACTION_FOLLOWUP_CREATED]}</span><br>";
-      echo "<small>" . __('Followups Created', 'mailanalyzer') . "</small>";
-      echo "</div></td>";
-
-      // Card: Tickets Linked
-      echo "<td class='center' style='width:25%;padding:8px;'>";
-      echo "<div style='background:linear-gradient(135deg,#a29bfe,#6c5ce7);color:#fff;border-radius:10px;padding:12px 8px;line-height:1.2;'>";
-      echo "<i class='fas fa-link'></i> ";
-      echo "<span style='font-size:2em;font-weight:bold;'>{$summary[self::ACTION_TICKET_LINKED]}</span><br>";
-      echo "<small>" . __('Tickets Linked', 'mailanalyzer') . "</small>";
-      echo "</div></td>";
-
-      // Card: New Tickets
-      echo "<td class='center' style='width:25%;padding:8px;'>";
-      echo "<div style='background:linear-gradient(135deg,#74b9ff,#0984e3);color:#fff;border-radius:10px;padding:12px 8px;line-height:1.2;'>";
-      echo "<i class='fas fa-ticket-alt'></i> ";
-      echo "<span style='font-size:2em;font-weight:bold;'>{$summary[self::ACTION_NEW_TICKET]}</span><br>";
-      echo "<small>" . __('New Tickets', 'mailanalyzer') . "</small>";
-      echo "</div></td>";
-
-      echo "</tr>";
-
-      // Total processed row
-      echo "<tr class='tab_bg_2'>";
-      echo "<td colspan='4' class='center' style='padding:10px;'>";
-      echo "<strong><i class='fas fa-envelope me-1'></i> ";
-      echo __('Total emails processed', 'mailanalyzer') . ": $total</strong>";
-      echo "</td></tr>";
-
-      echo "</table>";
-      echo "</div>";
-
-      // Recent activity table
-      if (!empty($events)) {
-         echo "<div class='center mt-3'>";
-         echo "<table class='tab_cadre_fixe'>";
-
-         echo "<tr><th colspan='5'>";
-         echo "<i class='fas fa-history me-1'></i> ";
-         echo __('Recent Activity', 'mailanalyzer');
-         echo "</th></tr>";
-
-         echo "<tr class='tab_bg_2'>";
-         echo "<th>" . __('Date', 'mailanalyzer') . "</th>";
-         echo "<th>" . __('Action', 'mailanalyzer') . "</th>";
-         echo "<th>" . __('Ticket', 'mailanalyzer') . "</th>";
-         echo "<th>" . __('Mail Collector', 'mailanalyzer') . "</th>";
-         echo "<th>" . __('Message ID', 'mailanalyzer') . "</th>";
-         echo "</tr>";
-
-         $actionLabels = [
-            self::ACTION_DUPLICATE_BLOCKED => '<span class="badge bg-danger"><i class="fas fa-ban"></i> ' . __('Duplicate Blocked', 'mailanalyzer') . '</span>',
-            self::ACTION_FOLLOWUP_CREATED  => '<span class="badge bg-success"><i class="fas fa-comments"></i> ' . __('Followup Created', 'mailanalyzer') . '</span>',
-            self::ACTION_TICKET_LINKED     => '<span class="badge bg-info"><i class="fas fa-link"></i> ' . __('Ticket Linked', 'mailanalyzer') . '</span>',
-            self::ACTION_NEW_TICKET        => '<span class="badge bg-primary"><i class="fas fa-ticket-alt"></i> ' . __('New Ticket', 'mailanalyzer') . '</span>',
-         ];
-
-         foreach ($events as $event) {
-            echo "<tr class='tab_bg_1'>";
-            echo "<td>" . Html::convDateTime($event['date_created']) . "</td>";
-            echo "<td>" . ($actionLabels[$event['action_type']] ?? $event['action_type']) . "</td>";
-
-            // Ticket link
-            if ($event['tickets_id'] > 0) {
-               $ticket = new Ticket();
-               if ($ticket->getFromDB($event['tickets_id'])) {
-                  echo "<td><a href='" . Ticket::getFormURLWithID($event['tickets_id']) . "'>";
-                  echo "<i class='fas fa-hashtag'></i> " . $event['tickets_id'] . " - " . $ticket->getName();
-                  echo "</a></td>";
-               } else {
-                  echo "<td><i class='fas fa-hashtag'></i> " . $event['tickets_id'] . " <small class='text-muted'>(" . __('deleted', 'mailanalyzer') . ")</small></td>";
-               }
-            } else {
-               echo "<td>—</td>";
-            }
-
-            // Mail collector
-            if ($event['mailcollectors_id'] > 0) {
-               echo "<td><i class='fas fa-inbox'></i> #" . $event['mailcollectors_id'] . "</td>";
-            } else {
-               echo "<td>—</td>";
-            }
-
-            // Message ID (truncated)
-            $msgId = htmlspecialchars($event['message_id']);
-            $shortId = strlen($msgId) > 40 ? substr($msgId, 0, 40) . '…' : $msgId;
-            echo "<td><small title='$msgId'>$shortId</small></td>";
-
-            echo "</tr>";
-         }
-
-         echo "</table>";
+      // KPI tiles
+      echo "<div class='ma-kpis'>";
+      foreach ($cards as $key => [$variant, $icon, $label]) {
+         $count = $summary[$key];
+         $share = $total > 0 ? round(($count / $total) * 100) : 0;
+         echo "<div class='ma-kpi ma-kpi--$variant'>";
+         echo "<div class='ma-kpi__top'>";
+         echo "<span class='ma-kpi__icon'><i class='ti $icon'></i></span>";
+         echo "<span class='ma-kpi__value'>" . $count . "</span>";
+         echo "</div>";
+         echo "<span class='ma-kpi__label'>" . $label . "</span>";
+         echo "<div class='ma-kpi__bar'><span style='width:" . $share . "%'></span></div>";
+         echo "<span class='ma-kpi__share'>" . $share . "% " . __('of total', 'mailanalyzer') . "</span>";
          echo "</div>";
       }
+      echo "</div>"; // .ma-kpis
+
+      // Total strip
+      echo "<div class='ma-total'><i class='ti ti-mail'></i> " . __('Total emails processed', 'mailanalyzer') . " <b>" . $total . "</b></div>";
+
+      echo "</div></div>"; // .ma-panel__body / .ma-panel
+   }
+
+
+   /**
+    * Display the recent activity log as a branded table.
+    *
+    * @param int $limit Number of events to show
+    * @return void
+    */
+   public static function showRecentActivity(int $limit = 15): void
+   {
+      $events = self::getRecentEvents($limit);
+
+      echo "<div class='ma-panel'>";
+      echo "<div class='ma-panel__head'>";
+      echo "<span class='ma-panel__icon'><i class='ti ti-history'></i></span>";
+      echo "<div class='ma-panel__title'>" . __('Recent Activity', 'mailanalyzer');
+      echo "<small>" . __('Latest emails analyzed by the plugin', 'mailanalyzer') . "</small>";
+      echo "</div></div>";
+      echo "<div class='ma-panel__body'>";
+
+      if (empty($events)) {
+         echo "<div class='ma-empty'><i class='ti ti-clock-off'></i>" . __('No activity recorded yet.', 'mailanalyzer') . "</div>";
+         echo "</div></div>";
+         return;
+      }
+
+      $actionLabels = [
+         self::ACTION_DUPLICATE_BLOCKED => "<span class='ma-badge ma-badge--danger'><i class='ti ti-copy-off'></i> " . __('Duplicate Blocked', 'mailanalyzer') . "</span>",
+         self::ACTION_FOLLOWUP_CREATED  => "<span class='ma-badge ma-badge--success'><i class='ti ti-message-2'></i> " . __('Followup Created', 'mailanalyzer') . "</span>",
+         self::ACTION_TICKET_LINKED     => "<span class='ma-badge ma-badge--violet'><i class='ti ti-link'></i> " . __('Ticket Linked', 'mailanalyzer') . "</span>",
+         self::ACTION_NEW_TICKET        => "<span class='ma-badge ma-badge--primary'><i class='ti ti-ticket'></i> " . __('New Ticket', 'mailanalyzer') . "</span>",
+      ];
+
+      echo "<table class='ma-table'>";
+      echo "<thead><tr>";
+      echo "<th>" . __('Date', 'mailanalyzer') . "</th>";
+      echo "<th>" . __('Action', 'mailanalyzer') . "</th>";
+      echo "<th>" . __('Ticket', 'mailanalyzer') . "</th>";
+      echo "<th>" . __('Mail Collector', 'mailanalyzer') . "</th>";
+      echo "<th>" . __('Message ID', 'mailanalyzer') . "</th>";
+      echo "</tr></thead><tbody>";
+
+      foreach ($events as $event) {
+         echo "<tr>";
+         echo "<td>" . Html::convDateTime($event['date_created']) . "</td>";
+         echo "<td>" . ($actionLabels[$event['action_type']] ?? htmlspecialchars($event['action_type'])) . "</td>";
+
+         // Ticket link
+         if ($event['tickets_id'] > 0) {
+            $ticket = new Ticket();
+            if ($ticket->getFromDB($event['tickets_id'])) {
+               echo "<td><a href='" . Ticket::getFormURLWithID($event['tickets_id']) . "'>";
+               echo "<i class='ti ti-hash'></i>" . $event['tickets_id'] . " — " . htmlspecialchars($ticket->getName());
+               echo "</a></td>";
+            } else {
+               echo "<td><i class='ti ti-hash ma-cell-icon'></i>" . $event['tickets_id'] . " <span class='ma-dash'>(" . __('deleted', 'mailanalyzer') . ")</span></td>";
+            }
+         } else {
+            echo "<td><span class='ma-dash'>—</span></td>";
+         }
+
+         // Mail collector
+         if ($event['mailcollectors_id'] > 0) {
+            echo "<td><i class='ti ti-inbox ma-cell-icon'></i>#" . $event['mailcollectors_id'] . "</td>";
+         } else {
+            echo "<td><span class='ma-dash'>—</span></td>";
+         }
+
+         // Message ID (truncated)
+         $msgId = htmlspecialchars($event['message_id']);
+         $shortId = strlen($msgId) > 40 ? substr($msgId, 0, 40) . '…' : $msgId;
+         echo "<td><span class='ma-mono' title='$msgId'>" . ($shortId !== '' ? $shortId : '—') . "</span></td>";
+
+         echo "</tr>";
+      }
+
+      echo "</tbody></table>";
+      echo "</div></div>";
    }
 
    /**

@@ -76,136 +76,149 @@ class PluginMailanalyzerConfig extends CommonDBTM
          $config['use_threadindex'] = 0;
       }
 
+      $period = $_SESSION['plugin_mailanalyzer_stats_period'] ?? '30days';
+
+      echo "<div class='mailanalyzer'>";
+
+      // ---- Hero ----
+      self::renderHero();
+
+      // ---- Settings panel ----
       echo "<form name='form' action=\"" . Toolbox::getItemTypeFormURL('Config') . "\" method='post' data-track-changes='true'>";
-
-      echo "<div class='center'>";
-      echo "<table class='tab_cadre_fixe'>";
-
-      // Header
-      echo "<tr><th colspan='2'>";
-      echo "<i class='fas fa-cogs me-1'></i> ";
-      echo __('Mail Analyzer setup', 'mailanalyzer');
-      echo "</th></tr>";
+      echo "<div class='ma-panel'>";
+      echo "<div class='ma-panel__head'>";
+      echo "<span class='ma-panel__icon'><i class='ti ti-adjustments'></i></span>";
+      echo "<div class='ma-panel__title'>" . __('Mail Analyzer setup', 'mailanalyzer');
+      echo "<small>" . __('Tune how incoming emails are grouped and filtered', 'mailanalyzer') . "</small>";
+      echo "</div></div>";
+      echo "<div class='ma-panel__body'>";
 
       // Thread-Index option
-      echo "<tr class='tab_bg_1'>";
-      echo "<td class='col-form-label'>";
-      echo "<i class='fas fa-project-diagram me-1 text-muted'></i> ";
-      echo __('Use of Thread index', 'mailanalyzer');
-      echo "<br><small class='text-muted'>";
-      echo __('Enable Microsoft Exchange Thread-Index header support for improved conversation tracking', 'mailanalyzer');
-      echo "</small>";
-      echo "</td>";
-      echo "<td>";
+      echo "<div class='ma-field'>";
+      echo "<div class='ma-field__label'><i class='ti ti-affiliate'></i> " . __('Use of Thread index', 'mailanalyzer');
+      echo "<span class='ma-field__hint'>" . __('Enable Microsoft Exchange Thread-Index header support for improved conversation tracking', 'mailanalyzer') . "</span>";
+      echo "</div>";
+      echo "<div class='ma-field__control'>";
       Dropdown::showYesNo("use_threadindex", $config['use_threadindex']);
-      echo "</td></tr>";
+      echo "</div></div>";
 
       // Whitelist
-      echo "<tr class='tab_bg_1'>";
-      echo "<td class='col-form-label'>";
-      echo "<i class='fas fa-check-circle me-1 text-success'></i> ";
-      echo __('Whitelist Domains', 'mailanalyzer');
-      echo "<br><small class='text-muted'>";
-      echo __('Never block emails from these domains (one per line, e.g., @important.com)', 'mailanalyzer');
-      echo "</small>";
-      echo "</td>";
-      echo "<td>";
-      echo "<textarea name='whitelist_domains' class='form-control' rows='3'>" . Html::entities_deep($config['whitelist_domains'] ?? '') . "</textarea>";
-      echo "</td></tr>";
+      echo "<div class='ma-field'>";
+      echo "<div class='ma-field__label'><i class='ti ti-shield-check'></i> " . __('Whitelist Domains', 'mailanalyzer');
+      echo "<span class='ma-field__hint'>" . __('Never block emails from these domains (one per line, e.g., @important.com)', 'mailanalyzer') . "</span>";
+      echo "</div>";
+      echo "<div class='ma-field__control'>";
+      echo "<textarea name='whitelist_domains' class='form-control' rows='3' placeholder='@trust.com'>" . Html::entities_deep($config['whitelist_domains'] ?? '') . "</textarea>";
+      echo "</div></div>";
 
       // Blacklist
-      echo "<tr class='tab_bg_1'>";
-      echo "<td class='col-form-label'>";
-      echo "<i class='fas fa-times-circle me-1 text-danger'></i> ";
-      echo __('Blacklist Domains', 'mailanalyzer');
-      echo "<br><small class='text-muted'>";
-      echo __('Always block emails from these domains (one per line, e.g., @spam.com)', 'mailanalyzer');
-      echo "</small>";
-      echo "</td>";
-      echo "<td>";
-      echo "<textarea name='blacklist_domains' class='form-control' rows='3'>" . Html::entities_deep($config['blacklist_domains'] ?? '') . "</textarea>";
-      echo "</td></tr>";
+      echo "<div class='ma-field'>";
+      echo "<div class='ma-field__label'><i class='ti ti-ban'></i> " . __('Blacklist Domains', 'mailanalyzer');
+      echo "<span class='ma-field__hint'>" . __('Always block emails from these domains (one per line, e.g., @spam.com)', 'mailanalyzer') . "</span>";
+      echo "</div>";
+      echo "<div class='ma-field__control'>";
+      echo "<textarea name='blacklist_domains' class='form-control' rows='3' placeholder='@spam.com'>" . Html::entities_deep($config['blacklist_domains'] ?? '') . "</textarea>";
+      echo "</div></div>";
 
-      // Info row
-      echo "<tr class='tab_bg_1'>";
-      echo "<td colspan='2'>";
-      echo "<div class='alert alert-info d-flex align-items-center'>";
-      echo "<i class='fas fa-info-circle fa-lg me-2'></i>";
-      echo "<div>";
-      echo "<strong>" . __('How it works', 'mailanalyzer') . "</strong><br>";
+      // How it works note
+      echo "<div class='ma-note'>";
+      echo "<i class='ti ti-info-circle ma-note__icon'></i>";
+      echo "<div class='ma-note__body'><strong>" . __('How it works', 'mailanalyzer') . "</strong>";
       echo __('This plugin analyzes email headers (Message-ID, References, Thread-Index) to automatically combine related emails into the same ticket, preventing duplicates when CC recipients use "Reply to All".', 'mailanalyzer');
-      echo "</div>";
-      echo "</div>";
-      echo "</td></tr>";
+      echo "</div></div>";
 
-      // Save button
-      echo "<tr class='tab_bg_2'>";
-      echo "<td colspan='2' class='center'>";
-      echo "<input type='submit' name='update' class='btn btn-primary' value=\"" . _sx('button', 'Save') . "\">";
-      echo "</td></tr>";
+      // Actions
+      echo "<div class='ma-actions'>";
+      echo "<button type='submit' name='update' class='ma-btn'><i class='ti ti-device-floppy'></i> " . _sx('button', 'Save') . "</button>";
+      echo "</div>";
 
-      echo "</table></div>";
+      echo "</div></div>"; // .ma-panel__body / .ma-panel
 
       echo "<input type='hidden' name='id' value='1'>";
       echo "<input type='hidden' name='config_context' value='plugin:mailanalyzer'>";
-
       Html::closeForm();
 
-      // Show Health Check
+      // ---- Statistics dashboard ----
+      PluginMailanalyzerStats::showDashboard($period);
+
+      // ---- Health check ----
       self::showHealthCheck();
 
-      // Show statistics dashboard below the config form
-      echo "<br>";
-      $period = $_SESSION['plugin_mailanalyzer_stats_period'] ?? '30days';
-      PluginMailanalyzerStats::showDashboard($period);
+      // ---- Recent activity ----
+      PluginMailanalyzerStats::showRecentActivity();
+
+      echo "</div>"; // .mailanalyzer
 
       return false;
    }
 
    /**
-    * Display Health Check for Mail Collectors
+    * Render the branded hero header of the Mail Analyzer tab.
+    *
+    * @return void
+    */
+   private static function renderHero(): void
+   {
+      echo "<div class='ma-hero'>";
+      echo "<div class='ma-hero__brand'>";
+      echo "<span class='ma-logo'><i class='ti ti-mail-opened'></i></span>";
+      echo "<div>";
+      echo "<div class='ma-hero__eyebrow'>GLPI &middot; " . __('Mail Analyzer', 'mailanalyzer') . "</div>";
+      echo "<h2 class='ma-hero__title'>" . __('Intelligent email conversation tracking', 'mailanalyzer') . "</h2>";
+      echo "<p class='ma-hero__subtitle'>" . __('Combines related emails into a single ticket and blocks duplicates automatically.', 'mailanalyzer') . "</p>";
+      echo "</div></div>";
+      echo "</div>";
+   }
+
+   /**
+    * Display Health Check for Mail Collectors.
+    *
+    * @return void
     */
    public static function showHealthCheck(): void
    {
       global $DB;
 
-      echo "<div class='center mt-4'>";
-      echo "<table class='tab_cadre_fixe'>";
-      echo "<tr><th colspan='4'>";
-      echo "<i class='fas fa-heartbeat me-1'></i> ";
-      echo __('Mail Collectors Health Check', 'mailanalyzer');
-      echo "</th></tr>";
-      echo "<tr class='tab_bg_2'>";
+      echo "<div class='ma-panel'>";
+      echo "<div class='ma-panel__head'>";
+      echo "<span class='ma-panel__icon'><i class='ti ti-activity'></i></span>";
+      echo "<div class='ma-panel__title'>" . __('Mail Collectors Health Check', 'mailanalyzer');
+      echo "<small>" . __('Connection status and last processed email per collector', 'mailanalyzer') . "</small>";
+      echo "</div></div>";
+      echo "<div class='ma-panel__body'>";
+
+      $res = $DB->request(['FROM' => 'glpi_mailcollectors']);
+
+      if (!count($res)) {
+         echo "<div class='ma-empty'><i class='ti ti-inbox-off'></i>" . __('No active mail collectors found.', 'mailanalyzer') . "</div>";
+         echo "</div></div>";
+         return;
+      }
+
+      echo "<table class='ma-table'>";
+      echo "<thead><tr>";
       echo "<th>" . __('Collector Name', 'mailanalyzer') . "</th>";
       echo "<th>" . __('Connection Status', 'mailanalyzer') . "</th>";
       echo "<th>" . __('Last Email Processed (Analyzer)', 'mailanalyzer') . "</th>";
       echo "<th>" . __('Errors Count', 'mailanalyzer') . "</th>";
-      echo "</tr>";
-
-      $res = $DB->request([
-         'FROM'  => 'glpi_mailcollectors'
-      ]);
-
-      if (!count($res)) {
-         echo "<tr class='tab_bg_1'><td colspan='4' class='center'>" . __('No active mail collectors found.', 'mailanalyzer') . "</td></tr>";
-      }
+      echo "</tr></thead><tbody>";
 
       foreach ($res as $mc) {
-         echo "<tr class='tab_bg_1'>";
-         
+         echo "<tr>";
+
          // Name
-         echo "<td><i class='fas fa-inbox me-1'></i> " . htmlspecialchars($mc['name']) . "</td>";
+         echo "<td><i class='ti ti-inbox ma-cell-icon'></i>" . htmlspecialchars($mc['name']) . "</td>";
 
          // Connection Status
-         $hasErrors = (int)$mc['errors'] > 0;
+         $hasErrors = (int) $mc['errors'] > 0;
          if ($hasErrors) {
-            echo "<td><span class='badge bg-danger'><i class='fas fa-exclamation-triangle'></i> " . __('Failing', 'mailanalyzer') . "</span></td>";
+            echo "<td><span class='ma-badge ma-badge--danger'><i class='ti ti-alert-triangle'></i> " . __('Failing', 'mailanalyzer') . "</span></td>";
          } else {
-            echo "<td><span class='badge bg-success'><i class='fas fa-check-circle'></i> " . __('OK', 'mailanalyzer') . "</span></td>";
+            echo "<td><span class='ma-badge ma-badge--success'><i class='ti ti-circle-check'></i> " . __('OK', 'mailanalyzer') . "</span></td>";
          }
 
          // Last Email Processed
-         $lastDate = __('Never', 'mailanalyzer');
+         $lastDate = "<span class='ma-dash'>" . __('Never', 'mailanalyzer') . "</span>";
          $resStats = $DB->request([
             'SELECT' => ['MAX' => 'date_created AS last_date'],
             'FROM'   => 'glpi_plugin_mailanalyzer_stats',
@@ -219,13 +232,16 @@ class PluginMailanalyzerConfig extends CommonDBTM
          echo "<td>" . $lastDate . "</td>";
 
          // Errors Count
-         echo "<td>" . (int)$mc['errors'] . "</td>";
-         
+         $errCount = (int) $mc['errors'];
+         echo "<td>" . ($errCount > 0
+            ? "<span class='ma-badge ma-badge--danger'>$errCount</span>"
+            : "<span class='ma-badge ma-badge--muted'>0</span>") . "</td>";
+
          echo "</tr>";
       }
 
-      echo "</table>";
-      echo "</div>";
+      echo "</tbody></table>";
+      echo "</div></div>";
    }
 
 

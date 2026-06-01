@@ -103,22 +103,25 @@ class PluginMailAnalyzer
          }
       }
 
+      // Capture the email UID now: once $parm->input is set to false below,
+      // $parm->input['_uid'] is no longer readable.
+      $uid = $parm->input['_uid'] ?? '';
+
       // Check Whitelist / Blacklist
       $from = $parm->input['_head']['from'] ?? '';
       $fromDomain = '';
       if (preg_match('/@([a-zA-Z0-9.-]+)/', $from, $matches)) {
-         $fromDomain = strtolower($matches[1]);
+         $fromDomain = strtolower(rtrim($matches[1], '.'));
       }
 
       if (!empty($fromDomain)) {
          // Blacklist: reject the email entirely
          $blacklist = array_filter(array_map('trim', explode("\n", $config['blacklist_domains'] ?? '')));
          foreach ($blacklist as $bDomain) {
-            $bDomain = ltrim(strtolower($bDomain), '@');
-            if ($bDomain === $fromDomain) {
+            if (self::domainMatches($fromDomain, $bDomain)) {
                Toolbox::logInfo("MailAnalyzer: Email rejected by Blacklist from domain $fromDomain");
+               $local_mailgate->deleteMails($uid, MailCollector::REFUSED_FOLDER);
                $parm->input = false;
-               $local_mailgate->deleteMails($parm->input['_uid'], MailCollector::REFUSED_FOLDER);
                return;
             }
          }
@@ -126,10 +129,9 @@ class PluginMailAnalyzer
          // Whitelist: let GLPI process normally, bypassing MailAnalyzer
          $whitelist = array_filter(array_map('trim', explode("\n", $config['whitelist_domains'] ?? '')));
          foreach ($whitelist as $wDomain) {
-            $wDomain = ltrim(strtolower($wDomain), '@');
-            if ($wDomain === $fromDomain) {
+            if (self::domainMatches($fromDomain, $wDomain)) {
                Toolbox::logInfo("MailAnalyzer: Email bypassed by Whitelist from domain $fromDomain");
-               return; 
+               return;
             }
          }
       }
@@ -150,8 +152,7 @@ class PluginMailAnalyzer
       // we must check if this email has not been received yet!
       // test if 'message-id' is in the DB
       $messageId = trim(html_entity_decode($parm->input['_head']['message_id'] ?? ''));
-      $uid = $parm->input['_uid'];
-      
+
       // Do not process duplicate check for empty message_ids to avoid rejecting all un-ID'd emails
       if (!empty($messageId)) {
          $res = $DB->request(
@@ -398,6 +399,25 @@ class PluginMailAnalyzer
       return array_filter($messages_id, function (string $val): bool {
          return trim($val, '< >') !== '';
       });
+   }
+
+
+   /**
+    * Check whether a sender domain matches a whitelist/blacklist pattern.
+    * The match is case-insensitive, ignores a leading "@", and also matches
+    * sub-domains (e.g. pattern "spam.com" matches "mail.spam.com").
+    *
+    * @param string $fromDomain The sender domain extracted from the email (lower-case)
+    * @param string $pattern    The configured domain entry (may start with "@")
+    * @return bool
+    */
+   private static function domainMatches(string $fromDomain, string $pattern): bool
+   {
+      $pattern = ltrim(strtolower(trim($pattern)), '@');
+      if ($pattern === '') {
+         return false;
+      }
+      return $fromDomain === $pattern || str_ends_with($fromDomain, '.' . $pattern);
    }
 
 
