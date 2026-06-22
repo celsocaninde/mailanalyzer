@@ -26,7 +26,7 @@ along with this plugin. If not, see <http://www.gnu.org/licenses/>.
 --------------------------------------------------------------------------
  */
 
-define("PLUGIN_MAILANALYZER_VERSION", "4.2.0");
+define("PLUGIN_MAILANALYZER_VERSION", "4.3.0");
 // Minimal GLPI version, inclusive
 define('PLUGIN_MAILANALYZER_MIN_GLPI', '11.0.0');
 // Maximum GLPI version, exclusive
@@ -42,7 +42,7 @@ function plugin_init_mailanalyzer(): void
 {
    global $PLUGIN_HOOKS;
 
-   Plugin::registerClass('PluginMailAnalyzer');
+   Plugin::registerClass('PluginMailanalyzerMailanalyzer');
    Plugin::registerClass('PluginMailanalyzerStats');
    Plugin::registerClass('PluginMailanalyzerCrontask');
 
@@ -52,15 +52,15 @@ function plugin_init_mailanalyzer(): void
    $PLUGIN_HOOKS['add_css']['mailanalyzer'] = ['public/css/mailanalyzer.css'];
 
    $PLUGIN_HOOKS['pre_item_add']['mailanalyzer'] = [
-      'Ticket' => ['PluginMailAnalyzer', 'plugin_pre_item_add_mailanalyzer'],
+      'Ticket' => ['PluginMailanalyzerMailanalyzer', 'plugin_pre_item_add_mailanalyzer'],
    ];
 
    $PLUGIN_HOOKS['item_add']['mailanalyzer'] = [
-      'Ticket' => ['PluginMailAnalyzer', 'plugin_item_add_mailanalyzer']
+      'Ticket' => ['PluginMailanalyzerMailanalyzer', 'plugin_item_add_mailanalyzer']
    ];
 
    $PLUGIN_HOOKS['item_purge']['mailanalyzer'] = [
-      'Ticket' => ['PluginMailAnalyzer', 'plugin_item_purge_mailanalyzer']
+      'Ticket' => ['PluginMailanalyzerMailanalyzer', 'plugin_item_purge_mailanalyzer']
    ];
 
    $PLUGIN_HOOKS['cron']['mailanalyzer'] = ['PluginMailanalyzerCrontask'];

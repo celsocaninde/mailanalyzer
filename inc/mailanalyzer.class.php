@@ -31,7 +31,7 @@ along with this plugin. If not, see <http://www.gnu.org/licenses/>.
  * Handles email conversation tracking by analyzing Message-ID, References,
  * and Thread-Index headers to combine related emails into a single ticket.
  */
-class PluginMailAnalyzer
+class PluginMailanalyzerMailanalyzer
 {
    /**
     * Static cache to preserve email headers across GLPI hook sanitization boundary
@@ -176,26 +176,32 @@ class PluginMailAnalyzer
                $messageId
             );
 
-            // Check if we have too many duplicates recently and raise an alert on MailCollector
-            $resCount = $DB->request([
-               'COUNT' => 'cpt',
-               'FROM'  => 'glpi_plugin_mailanalyzer_stats',
-               'WHERE' => [
-                  'mailcollectors_id' => $mailgateId, // Fix: removed invalid 'clone' keyword on integer
-                  'action_type'       => PluginMailanalyzerStats::ACTION_DUPLICATE_BLOCKED,
-                  'date_created'      => ['>=', date('Y-m-d H:i:s', time() - 3600)]
-               ]
-            ]);
-         $count = $resCount->current()['cpt'] ?? 0;
-         if ($count > 0 && $count % 20 === 0) {
-            if (class_exists('NotificationEvent')) {
-               $mc = new MailCollector();
-               if ($mc->getFromDB($mailgateId)) {
-                  NotificationEvent::raiseEvent('mailanalyzer_duplicate_alert', $mc);
-                  Toolbox::logWarning("MailAnalyzer: Raised high volume of duplicates alert for MailCollector #{$mailgateId} ($count duplicates in last hour)");
+            // Check if we have too many duplicates recently and raise an alert on
+            // the MailCollector. Threshold and window are configurable; a threshold
+            // of 0 disables the flood alert entirely.
+            $alertThreshold = (int) ($config['duplicate_alert_threshold'] ?? 20);
+            $alertWindowMin = max(1, (int) ($config['duplicate_alert_window'] ?? 60));
+            if ($alertThreshold > 0) {
+               $resCount = $DB->request([
+                  'COUNT' => 'cpt',
+                  'FROM'  => 'glpi_plugin_mailanalyzer_stats',
+                  'WHERE' => [
+                     'mailcollectors_id' => $mailgateId,
+                     'action_type'       => PluginMailanalyzerStats::ACTION_DUPLICATE_BLOCKED,
+                     'date_created'      => ['>=', date('Y-m-d H:i:s', time() - ($alertWindowMin * 60))]
+                  ]
+               ]);
+               $count = $resCount->current()['cpt'] ?? 0;
+               if ($count > 0 && $count % $alertThreshold === 0) {
+                  if (class_exists('NotificationEvent')) {
+                     $mc = new MailCollector();
+                     if ($mc->getFromDB($mailgateId)) {
+                        NotificationEvent::raiseEvent('mailanalyzer_duplicate_alert', $mc);
+                        Toolbox::logWarning("MailAnalyzer: Raised high volume of duplicates alert for MailCollector #{$mailgateId} ($count duplicates in last {$alertWindowMin} min)");
+                     }
+                  }
                }
             }
-         }
 
             $parm->input = false;
 

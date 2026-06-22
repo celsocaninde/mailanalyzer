@@ -170,3 +170,21 @@ msgstr "Últimos e-mails analisados pelo plugin"
 
 msgid "No activity recorded yet."
 msgstr "Nenhuma atividade registrada ainda."
+
+msgid "Duplicate flood alert"
+msgstr "Alerta de excesso de duplicatas"
+
+msgid "Raise an alert every N duplicate emails blocked within the time window below. Set to 0 to disable."
+msgstr "Dispara um alerta a cada N e-mails duplicados bloqueados dentro da janela de tempo abaixo. Use 0 para desativar."
+
+msgid "Alert window (minutes)"
+msgstr "Janela do alerta (minutos)"
+
+msgid "Time window used to count blocked duplicates for the flood alert."
+msgstr "Janela de tempo usada para contar as duplicatas bloqueadas no alerta."
+
+msgid "Duplicates blocked (30d)"
+msgstr "Duplicatas bloqueadas (30d)"
+
+msgid "Followups created (30d)"
+msgstr "Acompanhamentos criados (30d)"

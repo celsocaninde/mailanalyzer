@@ -120,6 +120,24 @@ class PluginMailanalyzerConfig extends CommonDBTM
       echo "<textarea name='blacklist_domains' class='form-control' rows='3' placeholder='@spam.com'>" . Html::entities_deep($config['blacklist_domains'] ?? '') . "</textarea>";
       echo "</div></div>";
 
+      // Duplicate-flood alert: threshold
+      echo "<div class='ma-field'>";
+      echo "<div class='ma-field__label'><i class='ti ti-bell-ringing'></i> " . __('Duplicate flood alert', 'mailanalyzer');
+      echo "<span class='ma-field__hint'>" . __('Raise an alert every N duplicate emails blocked within the time window below. Set to 0 to disable.', 'mailanalyzer') . "</span>";
+      echo "</div>";
+      echo "<div class='ma-field__control'>";
+      echo "<input type='number' min='0' step='1' name='duplicate_alert_threshold' class='form-control' value='" . (int) ($config['duplicate_alert_threshold'] ?? 20) . "'>";
+      echo "</div></div>";
+
+      // Duplicate-flood alert: window (minutes)
+      echo "<div class='ma-field'>";
+      echo "<div class='ma-field__label'><i class='ti ti-clock'></i> " . __('Alert window (minutes)', 'mailanalyzer');
+      echo "<span class='ma-field__hint'>" . __('Time window used to count blocked duplicates for the flood alert.', 'mailanalyzer') . "</span>";
+      echo "</div>";
+      echo "<div class='ma-field__control'>";
+      echo "<input type='number' min='1' step='1' name='duplicate_alert_window' class='form-control' value='" . max(1, (int) ($config['duplicate_alert_window'] ?? 60)) . "'>";
+      echo "</div></div>";
+
       // How it works note
       echo "<div class='ma-note'>";
       echo "<i class='ti ti-info-circle ma-note__icon'></i>";
@@ -200,6 +218,8 @@ class PluginMailanalyzerConfig extends CommonDBTM
       echo "<th>" . __('Collector Name', 'mailanalyzer') . "</th>";
       echo "<th>" . __('Connection Status', 'mailanalyzer') . "</th>";
       echo "<th>" . __('Last Email Processed (Analyzer)', 'mailanalyzer') . "</th>";
+      echo "<th>" . __('Duplicates blocked (30d)', 'mailanalyzer') . "</th>";
+      echo "<th>" . __('Followups created (30d)', 'mailanalyzer') . "</th>";
       echo "<th>" . __('Errors Count', 'mailanalyzer') . "</th>";
       echo "</tr></thead><tbody>";
 
@@ -230,6 +250,29 @@ class PluginMailanalyzerConfig extends CommonDBTM
             }
          }
          echo "<td>" . $lastDate . "</td>";
+
+         // 30-day activity counts (duplicates blocked / followups created)
+         $activity = [];
+         $resAct = $DB->request([
+            'SELECT'  => ['action_type', 'COUNT' => 'action_type AS count'],
+            'FROM'    => 'glpi_plugin_mailanalyzer_stats',
+            'WHERE'   => [
+               'mailcollectors_id' => $mc['id'],
+               'date_created'      => ['>=', date('Y-m-d H:i:s', strtotime('-30 days'))]
+            ],
+            'GROUPBY' => 'action_type'
+         ]);
+         foreach ($resAct as $a) {
+            $activity[$a['action_type']] = (int) $a['count'];
+         }
+         $dupCount = $activity[PluginMailanalyzerStats::ACTION_DUPLICATE_BLOCKED] ?? 0;
+         $fupCount = $activity[PluginMailanalyzerStats::ACTION_FOLLOWUP_CREATED] ?? 0;
+         echo "<td>" . ($dupCount > 0
+            ? "<span class='ma-badge ma-badge--primary'>$dupCount</span>"
+            : "<span class='ma-badge ma-badge--muted'>0</span>") . "</td>";
+         echo "<td>" . ($fupCount > 0
+            ? "<span class='ma-badge ma-badge--success'>$fupCount</span>"
+            : "<span class='ma-badge ma-badge--muted'>0</span>") . "</td>";
 
          // Errors Count
          $errCount = (int) $mc['errors'];
